@@ -642,123 +642,92 @@ int getCost(int cardNumber)
 	
   return -1;
 }
-/////////////// My implemented functions ////////////////////////////
 
-int barrieca_function_smithy(int currentPlayer, struct gameState *state, int handPos){
-	int i;
-      //+3 Cards
-  for (i = 0; i < 3; i++)
-	{
-	  drawCard(currentPlayer, state);
-	}
-			
-	//discard card from hand
-	discardCard(handPos, currentPlayer, state, 0);
-	return 0;
+
+/**********************BEGIN FIVE CARD FUNCTIONS************************/
+
+
+int gardenEffect(){
+	return -1;
+	
 }
 
-int barrieca_function_village(int currentPlayer, struct gameState *state, int handPos){
-  //+1 Card
-  drawCard(currentPlayer, state);
-			
-  //+2 Actions
-  state->numActions = state->numActions + 2;
-			
-  //discard played card from hand
-  discardCard(handPos, currentPlayer, state, 0);
-  return 0;
-}
 
-int barrieca_function_great_hall(int currentPlayer, struct gameState state, int handPos){
-	//+1 Card
-	drawCard(currentPlayer, &state);
-	
-	//+1 Actions
-	state.numActions++;
-	
-	//discard card from hand
-	discardCard(handPos, currentPlayer, &state, 0);
-	return 0;
-}
-
-int barrieca_function_minion(int currentPlayer, struct gameState *state, int handPos, int choice1, int choice2){
-	int i,j;
-	
-	//+1 action
-	state->numActions++;
-	
-	//discard card from hand
-	discardCard(handPos, currentPlayer, state, 0);
-	
-	if (choice1)		//+2 coins
-	{
-	  state->coins = state->coins + 2;
-	}
-			
-  else if (choice2)		//discard hand, redraw 4, other players with 5+ cards discard hand and draw 4
-	{
-	  //discard hand
-	  while(numHandCards(state) > 0)
-		{
-			discardCard(handPos, currentPlayer, state, 0);
-		}
-				
-	  //draw 4
-	  for (i = 0; i < 4; i++)
+int smithyEffect(struct gameState *state, int handPos){
+		//+3 Cards
+		for (i = 0; i < 3; i++)
 		{
 			drawCard(currentPlayer, state);
 		}
-				
-	  //other players discard hand and redraw if hand size > 4
-	  for (i = 0; i < state->numPlayers; i++)
-	  {
-	    if (i != currentPlayer)
-			{
-				if ( state->handCount[i] > 4 )
-		    {
-		      //discard hand
-		      while( state->handCount[i] > 0 )
-					{
-						discardCard(handPos, i, state, 0);
-					}
-							
-		      //draw 4
-		      for (j = 0; j < 4; j++)
-					{
-						drawCard(j, state);
-					}
-		    }
-			}
-	  }
-	}
-	return 0;
+
+		//discard card from hand
+		discardCard(handPos, currentPlayer, state, 0);
+		return 0;
+
 }
 
-int barrieca_function_steward(int currentPlayer, struct gameState *state, int handPos, int choice1, int choice2, int choice3){
-  if (choice1 == 1)
+
+int stewardEffect(struct gameState *state, int handPos, int choice2, int choice3){
+		if (choice1 == 1)
+		{
+			//+2 cards
+			drawCard(currentPlayer, state);
+			drawCard(currentPlayer, state);
+		}
+		else if (choice1 == 2)
+		{
+			//+2 coins
+			state->coins = state->coins + 2;
+		}
+		else
+		{
+			//trash 2 cards in hand
+			discardCard(choice2, currentPlayer, state, 1);
+			discardCard(choice3, currentPlayer, state, 1);
+		}
+
+		//discard card from hand
+		discardCard(handPos, currentPlayer, state, 0);
+		return 0;
+
+}
+
+
+int outpostEffect(struct gameState *state, int handPos){
+      //set outpost flag
+      state->outpostPlayed++;
+	  handPos++;
+			
+      //discard card
+      discardCard(handPos, currentPlayer, state, 0);
+      return 0;
+
+}
+
+
+int embargoEffect(struct gameState *state, int choice1, int handPos){
+      //+1 Coins
+      state->coins = state->coins + 1;
+			
+      //see if selected pile is in play
+      if ( state->supplyCount[choice1] == -1 )
 	{
-	  //+2 cards
-	  drawCard(currentPlayer, state);
-	  drawCard(currentPlayer, state);
-	}
-  else if (choice1 == 2)
-	{
-	  //+2 coins
-	  state->coins = state->coins + 2;
-	}
-  else
-	{
-	  //trash 2 cards in hand
-	  discardCard(choice2, currentPlayer, state, 1);
-	  discardCard(choice3, currentPlayer, state, 1);
+	  return 0;
 	}
 			
-  //discard card from hand
-  discardCard(handPos, currentPlayer, state, 0);
-  return 0;
+      //add embargo token to selected supply pile
+      state->embargoTokens[choice1]++;
+			
+      //trash card
+      discardCard(handPos, currentPlayer, state, 1);		
+      return 0;
+
 }
 
-/////////////////////////////////////////////////////////////////////
+
+/**********************END FIVE CARD FUNCTIONS************************/
+
+
 int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState *state, int handPos, int *bonus)
 {
   int i;
@@ -881,7 +850,7 @@ int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState
       return 0;
 			
     case gardens:
-      return -1;
+      return gardenEffect();
 			
     case mine:
       j = state->hand[currentPlayer][choice1];  //store card we will trash
@@ -944,11 +913,19 @@ int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState
 
       return 0;
 		
-    case smithy://added this function
-      return barrieca_function_smithy(currentPlayer, state, handPos);
+    case smithy:
+    	return smithyEffect(state, handPos);
 		
-    case village://added this function
-			return barrieca_function_village(currentPlayer, state, handPos);
+    case village:
+      //+1 Card
+      drawCard(currentPlayer, state);
+			
+      //+2 Actions
+      state->numActions = state->numActions + 2;
+			
+      //discard played card from hand
+      discardCard(handPos, currentPlayer, state, 0);
+      return 0;
 		
     case baron:
       state->numBuys++;//Increase buys by 1!
@@ -1001,15 +978,71 @@ int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState
       
       return 0;
 		
-    case great_hall://added this function
-			return barrieca_function_great_hall(currentPlayer, *state, handPos);
+    case great_hall:
+      //+1 Card
+      drawCard(currentPlayer, state);
+			
+      //+1 Actions
+      state->numActions++;
+			
+      //discard card from hand
+      discardCard(handPos, currentPlayer, state, 0);
+      return 0;
 		
-    case minion://added this function
-			return barrieca_function_minion(currentPlayer, state, handPos, choice1, choice2);
+    case minion:
+      //+1 action
+      state->numActions++;
+			
+      //discard card from hand
+      discardCard(handPos, currentPlayer, state, 0);
+			
+      if (choice1)		//+2 coins
+	{
+	  state->coins = state->coins + 2;
+	}
+			
+      else if (choice2)		//discard hand, redraw 4, other players with 5+ cards discard hand and draw 4
+	{
+	  //discard hand
+	  while(numHandCards(state) > 0)
+	    {
+	      discardCard(handPos, currentPlayer, state, 0);
+	    }
+				
+	  //draw 4
+	  for (i = 0; i < 4; i++)
+	    {
+	      drawCard(currentPlayer, state);
+	    }
+				
+	  //other players discard hand and redraw if hand size > 4
+	  for (i = 0; i < state->numPlayers; i++)
+	    {
+	      if (i != currentPlayer)
+		{
+		  if ( state->handCount[i] > 4 )
+		    {
+		      //discard hand
+		      while( state->handCount[i] > 0 )
+			{
+			  discardCard(handPos, i, state, 0);
+			}
+							
+		      //draw 4
+		      for (j = 0; j < 4; j++)
+			{
+			  drawCard(i, state);
+			}
+		    }
+		}
+	    }
+				
+	}
+      return 0;
 		
-    case steward://added this function
-			return barrieca_function_steward(currentPlayer, state, handPos, choice1, choice2, choice3);
-
+    case steward:
+      return stewardEffect(state, handPos, choice2, choice3);
+		
     case tribute:
       if ((state->discardCount[nextPlayer] + state->deckCount[nextPlayer]) <= 1){
 	if (state->deckCount[nextPlayer] > 0){
@@ -1163,29 +1196,10 @@ int cardEffect(int card, int choice1, int choice2, int choice3, struct gameState
 
 		
     case embargo: 
-      //+2 Coins
-      state->coins = state->coins + 2;
-			
-      //see if selected pile is in play
-      if ( state->supplyCount[choice1] == -1 )
-	{
-	  return -1;
-	}
-			
-      //add embargo token to selected supply pile
-      state->embargoTokens[choice1]++;
-			
-      //trash card
-      discardCard(handPos, currentPlayer, state, 1);		
-      return 0;
+      return emargoEffect(state, choice1, handPos);
 		
     case outpost:
-      //set outpost flag
-      state->outpostPlayed++;
-			
-      //discard card
-      discardCard(handPos, currentPlayer, state, 0);
-      return 0;
+    	return outpostEffect(state, handPos);
 		
     case salvager:
       //+1 buy
