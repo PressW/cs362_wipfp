@@ -1,0 +1,12 @@
+I made updates to 5 cards. 
+There are new functions which correspond to:
+    gardens card
+    smithy card
+    steward card
+    embargo card
+    outpost card
+
+Within the switch statement, the corresponding case will call each of the these functions.
+The return value of the function will be propagated up into the return value for the associated switch-case.
+
+The only files included are dominion.c, dominion.h and dominiion_helpers.h
